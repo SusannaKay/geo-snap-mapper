@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Card } from '@/components/ui/card';
@@ -14,7 +14,7 @@ L.Icon.Default.mergeOptions({
 
 const createNumberedIcon = (number: number, isSelected: boolean = false) => {
   const size = isSelected ? 48 : 30;
-  const backgroundColor = isSelected ? '#2563eb' : '#3b82f6';
+  const backgroundColor = isSelected ? '#2563eb' : 'hsl(217 91% 60%)';
   const borderColor = isSelected ? '#fbbf24' : 'white';
   const borderWidth = isSelected ? '4px' : '3px';
   const boxShadow = isSelected
@@ -39,14 +39,17 @@ const createNumberedIcon = (number: number, isSelected: boolean = false) => {
       box-shadow: ${boxShadow};
       transition: all 0.3s ease;
       z-index: ${isSelected ? 1000 : 500};
+      cursor: pointer;
     ">${number}</div>`,
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
   });
 };
 
+
+
 // Seleziona e centra la mappa sul luogo
-const FlyToSelectedLocation: React.FC<{ selectedLocation?: { lat: number; lng: number } | null }> = ({ selectedLocation }) => {
+const FlyToSelectedLocation: React.FC<{ selectedLocation?: any }> = ({ selectedLocation }) => {
   const map = useMap();
   const prev = useRef<{ lat: number; lng: number } | null>(null);
 
@@ -98,7 +101,7 @@ const LocationMap: React.FC<LocationMapProps> = ({
     ? [latitude, longitude]
     : defaultCenter;
 
-  const zoom = selectedLocation ? 15 : latitude && longitude ? 14 : 2;
+  const zoom = selectedLocation || (latitude && longitude) ? 14 : 6;
 
   return (
     <Card className="overflow-hidden bg-gradient-card border-border/50 shadow-design-md">
@@ -128,7 +131,7 @@ const LocationMap: React.FC<LocationMapProps> = ({
                 position={[location.lat, location.lng]}
                 icon={createNumberedIcon(index + 1, isSelected)}
                 eventHandlers={{
-                  click: () => onLocationSelect?.(location),
+                  click: () => onLocationSelect && onLocationSelect(location),
                 }}
               />
             );
