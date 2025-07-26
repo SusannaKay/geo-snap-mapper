@@ -128,6 +128,11 @@ const Index = () => {
     }
   };
 
+  const handleImageRemove = () => {
+    setResult(null);
+    setSelectedLocation(null);
+  };
+
   const handleLocationSelect = (location: any) => {
     setSelectedLocation(location);
   };
@@ -148,7 +153,11 @@ const Index = () => {
 
         {/* Upload Section */}
         <div className="max-w-2xl mx-auto mb-8 animate-scale-in">
-          <ImageUpload onImageUpload={handleImageUpload} isLoading={isLoading} />
+          <ImageUpload 
+            onImageUpload={handleImageUpload} 
+            onImageRemove={handleImageRemove}
+            isLoading={isLoading} 
+          />
         </div>
 
         {/* Results Section */}

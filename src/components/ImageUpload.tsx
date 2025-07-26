@@ -7,10 +7,11 @@ import { toast } from '@/hooks/use-toast';
 
 interface ImageUploadProps {
   onImageUpload: (file: File) => void;
+  onImageRemove?: () => void;
   isLoading: boolean;
 }
 
-const ImageUpload: React.FC<ImageUploadProps> = ({ onImageUpload, isLoading }) => {
+const ImageUpload: React.FC<ImageUploadProps> = ({ onImageUpload, onImageRemove, isLoading }) => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
 
@@ -50,6 +51,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onImageUpload, isLoading }) =
   const clearImage = () => {
     setPreviewUrl(null);
     setDragActive(false);
+    onImageRemove?.();
   };
 
   return (
