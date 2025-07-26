@@ -77,7 +77,7 @@ const Index = () => {
 
     } catch (error) {
       console.error('Upload error:', error);
-      
+
       // Mock data for demonstration
       const mockData: ProcessingResult = {
         exifData: {
@@ -156,15 +156,15 @@ const Index = () => {
             Image Location Analyzer
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Carica un'immagine per estrarre i metadati EXIF e scoprire la posizione geografica 
+            Carica un'immagine per estrarre i metadati EXIF e scoprire la posizione geografica
             tramite coordinate GPS o analisi AI avanzata
           </p>
         </div>
 
         {/* Upload Section */}
         <div className="max-w-2xl mx-auto mb-8 animate-scale-in">
-          <ImageUpload 
-            onImageUpload={handleImageUpload} 
+          <ImageUpload
+            onImageUpload={handleImageUpload}
             onImageRemove={handleImageRemove}
             isLoading={isLoading}
             originalFile={originalFile}
@@ -188,48 +188,43 @@ const Index = () => {
               </Card>
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Left Column - Info */}
-              <div className="space-y-6">
-                {/* EXIF Info */}
-                {result.exifData && (
-                  <ExifInfo exifData={result.exifData} />
-                )}
+            <div className="space-y-6">
+              {/* EXIF Info */}
+              {result.exifData && (
+                <ExifInfo exifData={result.exifData} />
+              )}
 
-                {/* Location Options */}
-                {result.probableLocations && result.probableLocations.length > 0 && (
-                  <LocationOptions
-                    locations={result.probableLocations}
-                    onLocationSelect={handleLocationSelect}
-                    selectedLocation={selectedLocation}
-                  />
-                )}
-
-                {/* Image Processor */}
-                {selectedLocation && originalFile && (
-                  <ImageProcessor
-                    originalFile={originalFile}
-                    selectedLocation={selectedLocation}
-                    onImageUpdated={handleImageUpdated}
-                    isProcessing={isProcessingImage}
-                  />
-                )}
-              </div>
-
-              {/* Right Column - Map */}
-              <div className="lg:sticky lg:top-8 lg:self-start">
-                <LocationMap
-                  latitude={
-                    result.exifData?.coordinates?.latitude || selectedLocation?.lat
-                  }
-                  longitude={
-                    result.exifData?.coordinates?.longitude || selectedLocation?.lng
-                  }
-                  locations={result.probableLocations || []}
+              {/* Image Processor - Above the map */}
+              {selectedLocation && originalFile && (
+                <ImageProcessor
+                  originalFile={originalFile}
                   selectedLocation={selectedLocation}
-                  onLocationSelect={handleLocationSelect}
+                  onImageUpdated={handleImageUpdated}
+                  isProcessing={isProcessingImage}
                 />
-              </div>
+              )}
+
+              {/* Map - In the middle */}
+              <LocationMap
+                latitude={
+                  result.exifData?.coordinates?.latitude || selectedLocation?.lat
+                }
+                longitude={
+                  result.exifData?.coordinates?.longitude || selectedLocation?.lng
+                }
+                locations={result.probableLocations || []}
+                selectedLocation={selectedLocation}
+                onLocationSelect={handleLocationSelect}
+              />
+
+              {/* Location Options - Below the map */}
+              {result.probableLocations && result.probableLocations.length > 0 && (
+                <LocationOptions
+                  locations={result.probableLocations}
+                  onLocationSelect={handleLocationSelect}
+                  selectedLocation={selectedLocation}
+                />
+              )}
             </div>
           </div>
         )}
