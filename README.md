@@ -59,7 +59,7 @@ This project is built with:
 - React
 - shadcn-ui
 - Tailwind CSS
-- **Leaflet.js** - Interactive mapping library
+- Leaflet.js + OpenStreetMap for interactive maps
 - **OpenStreetMap** - Free, open-source map tiles
 
 ## 🗺️ Mapping Features
