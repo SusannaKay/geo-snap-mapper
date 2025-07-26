@@ -59,6 +59,32 @@ This project is built with:
 - React
 - shadcn-ui
 - Tailwind CSS
+- **Leaflet.js** - Interactive mapping library
+- **OpenStreetMap** - Free, open-source map tiles
+
+## 🗺️ Mapping Features
+
+This application now includes **Leaflet.js and OpenStreetMap integration** for interactive mapping:
+
+### ✨ Key Features
+- **No API Keys Required**: Uses free OpenStreetMap tiles
+- **Interactive Controls**: Zoom, pan, and popup interactions  
+- **Custom Markers**: Numbered markers with click events
+- **Responsive Design**: Works on all device sizes
+- **Lightweight**: Smaller bundle size than Mapbox GL
+
+### 📍 Usage
+The map displays location information for uploaded images:
+- **Exact GPS coordinates** from EXIF data (if available)
+- **Probable locations** detected via AI analysis
+- **Interactive markers** with detailed popup information
+- **Default center**: Rome, Italy (no location data)
+
+### 🎯 Demo
+- **Main App**: Upload an image to see the interactive map
+- **Standalone Demo**: Visit `/leaflet-demo.html` for a basic implementation example
+
+For detailed technical documentation, see [LEAFLET_INTEGRATION.md](./LEAFLET_INTEGRATION.md).
 
 ## How can I deploy this project?
 
