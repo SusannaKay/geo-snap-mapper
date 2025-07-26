@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "geo-snap-mapper"
+version = "0.1.0"
+description = ""
+authors = []
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "*"
+uvicorn = {version = "*", extras = ["standard"]}
+python-multipart = "*"
+pillow = "*"
+piexif = "*"
+openai = "*"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
