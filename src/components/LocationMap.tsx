@@ -1,15 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import { Card } from '@/components/ui/card';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { Card } from '@/components/ui/card';
 
 // Fix for default markers in Leaflet with React
 delete (L.Icon.Default.prototype as Record<string, unknown>)._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
 const createNumberedIcon = (number: number, isSelected: boolean = false) => {
@@ -22,6 +22,24 @@ const createNumberedIcon = (number: number, isSelected: boolean = false) => {
   const fontSize = isSelected ? '14px' : '12px';
   
   return L.divIcon({
+    className: 'exact-location-marker',
+    html: `<div style="
+      width: 25px;
+      height: 25px;
+      border-radius: 50%;
+      background: #3b82f6;
+      border: 3px solid white;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    "></div>`,
+    iconSize: [25, 25],
+    iconAnchor: [12, 12],
+  });
+};
+
+// Cerchio numerato per location NON selezionata
+const createProbableLocationIcon = (index: number) => {
+  return L.divIcon({
+    className: 'location-marker',
     html: `<div style="
       width: ${size}px;
       height: ${size}px;
@@ -44,14 +62,48 @@ const createNumberedIcon = (number: number, isSelected: boolean = false) => {
   });
 };
 
-// Component to handle map view updates
-const MapViewController: React.FC<{ center: [number, number]; zoom: number }> = ({ center, zoom }) => {
+// Cerchio numerato per location SELEZIONATA (più grande, evidenziato)
+const createSelectedLocationIcon = (index: number) => {
+  return L.divIcon({
+    className: 'selected-location-marker',
+    html: `<div style="
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: #2563eb;
+      border: 4px solid #fbbf24;
+      box-shadow: 0 0 14px 4px #fbbf24, 0 2px 8px rgba(0,0,0,0.3);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: bold;
+      font-size: 22px;
+      transition: all 0.3s;
+      z-index:1000;
+    ">${index + 1}</div>`,
+    iconSize: [48, 48],
+    iconAnchor: [24, 24],
+  });
+};
+
+// Seleziona e centra la mappa sul luogo
+const FlyToSelectedLocation: React.FC<{ selectedLocation?: any }> = ({ selectedLocation }) => {
   const map = useMap();
-  
+  const prev = useRef<{ lat: number; lng: number } | null>(null);
+
   useEffect(() => {
-    map.setView(center, zoom);
-  }, [map, center, zoom]);
-  
+    if (selectedLocation && (
+      !prev.current ||
+      prev.current.lat !== selectedLocation.lat ||
+      prev.current.lng !== selectedLocation.lng
+    )) {
+      map.flyTo([selectedLocation.lat, selectedLocation.lng], 15, { duration: 1 });
+      prev.current = { lat: selectedLocation.lat, lng: selectedLocation.lng };
+    }
+  }, [selectedLocation, map]);
+
   return null;
 };
 
@@ -90,28 +142,22 @@ const LocationMap: React.FC<LocationMapProps> = ({
     : defaultCenter;
     
   const zoom = selectedLocation || (latitude && longitude) ? 14 : 6;
-
-  const handleLocationClick = (location: { name: string; lat: number; lng: number }) => {
-    onLocationSelect?.(location);
-  };
+  const zoom = selectedLocation ? 15 : latitude && longitude ? 14 : 2;
 
   return (
     <Card className="overflow-hidden bg-gradient-card border-border/50 shadow-design-md">
-      <div className="w-full h-96" style={{ minHeight: '400px' }}>
+      <div className="w-full h-96 rounded-lg" style={{ minHeight: '400px' }}>
         <MapContainer
           center={center}
           zoom={zoom}
           scrollWheelZoom={true}
-          style={{ height: '100%', width: '100%' }}
-          className="rounded-lg"
+          className="w-full h-full rounded-lg"
+          attributionControl={true}
         >
-          {/* OpenStreetMap tiles */}
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
-          
-          <MapViewController center={center} zoom={zoom} />
 
           {/* Probable locations markers */}
           {locations.map((location, index) => {
