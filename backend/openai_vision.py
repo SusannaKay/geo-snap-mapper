@@ -4,8 +4,9 @@ from typing import List, Dict, Optional
 
 import openai
 from openai import OpenAIError
+from .config import settings
 
-client = openai.OpenAI()
+client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
 
 SYSTEM_PROMPT = (
     "Sei un assistente specializzato nell’individuare il luogo in cui una foto è stata scattata usando solo il contenuto visivo. "
