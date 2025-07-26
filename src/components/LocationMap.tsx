@@ -16,11 +16,11 @@ const createNumberedIcon = (number: number, isSelected: boolean = false) => {
   const size = isSelected ? 42 : 30;
   const backgroundColor = isSelected ? 'hsl(217 91% 50%)' : 'hsl(217 91% 60%)';
   const borderWidth = isSelected ? '4px' : '3px';
-  const boxShadow = isSelected 
-    ? '0 4px 16px rgba(0,0,0,0.4), 0 2px 8px rgba(59, 130, 246, 0.5)' 
+  const boxShadow = isSelected
+    ? '0 4px 16px rgba(0,0,0,0.4), 0 2px 8px rgba(59, 130, 246, 0.5)'
     : '0 2px 8px rgba(0,0,0,0.3)';
   const fontSize = isSelected ? '14px' : '12px';
-  
+
   return L.divIcon({
     className: 'exact-location-marker',
     html: `<div style="
@@ -133,16 +133,15 @@ const LocationMap: React.FC<LocationMapProps> = ({
 }) => {
   // Default center (Rome, Italy) if no coordinates provided
   const defaultCenter: [number, number] = [41.9028, 12.4964];
-  
+
   // Use selected location coordinates if available, otherwise use provided coordinates, otherwise default
-  const center: [number, number] = selectedLocation 
+  const center: [number, number] = selectedLocation
     ? [selectedLocation.lat, selectedLocation.lng]
-    : latitude && longitude 
-    ? [latitude, longitude] 
+    : latitude && longitude
+    ? [latitude, longitude]
     : defaultCenter;
-    
+
   const zoom = selectedLocation || (latitude && longitude) ? 14 : 6;
-  const zoom = selectedLocation ? 15 : latitude && longitude ? 14 : 2;
 
   return (
     <Card className="overflow-hidden bg-gradient-card border-border/50 shadow-design-md">
@@ -161,11 +160,11 @@ const LocationMap: React.FC<LocationMapProps> = ({
 
           {/* Probable locations markers */}
           {locations.map((location, index) => {
-            const isSelected = selectedLocation && 
-              selectedLocation.lat === location.lat && 
+            const isSelected = selectedLocation &&
+              selectedLocation.lat === location.lat &&
               selectedLocation.lng === location.lng &&
               selectedLocation.name === location.name;
-              
+
             return (
               <Marker
                 key={`${location.name}-${index}`}
