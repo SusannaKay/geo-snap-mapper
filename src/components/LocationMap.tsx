@@ -5,44 +5,42 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 // Fix for default markers in Leaflet with React
-delete (L.Icon.Default.prototype as any)._getIconUrl;
+delete (L.Icon.Default.prototype as Record<string, unknown>)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
 });
 
-// Custom icons for different marker types
-const exactLocationIcon = new L.Icon({
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-  className: 'exact-location-marker'
-});
-
-const createNumberedIcon = (number: number) => {
+const createNumberedIcon = (number: number, isSelected: boolean = false) => {
+  const size = isSelected ? 42 : 30;
+  const backgroundColor = isSelected ? 'hsl(217 91% 50%)' : 'hsl(217 91% 60%)';
+  const borderWidth = isSelected ? '4px' : '3px';
+  const boxShadow = isSelected 
+    ? '0 4px 16px rgba(0,0,0,0.4), 0 2px 8px rgba(59, 130, 246, 0.5)' 
+    : '0 2px 8px rgba(0,0,0,0.3)';
+  const fontSize = isSelected ? '14px' : '12px';
+  
   return L.divIcon({
     html: `<div style="
-      width: 30px;
-      height: 30px;
+      width: ${size}px;
+      height: ${size}px;
       border-radius: 50%;
-      background: hsl(217 91% 60%);
-      border: 3px solid white;
+      background: ${backgroundColor};
+      border: ${borderWidth} solid white;
       display: flex;
       align-items: center;
       justify-content: center;
       color: white;
       font-weight: bold;
-      font-size: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      font-size: ${fontSize};
+      box-shadow: ${boxShadow};
+      transition: all 0.3s ease;
+      z-index: ${isSelected ? 1000 : 500};
     ">${number}</div>`,
-    className: 'numbered-marker',
-    iconSize: [30, 30],
-    iconAnchor: [15, 15],
+    className: `numbered-marker ${isSelected ? 'selected' : ''}`,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
   });
 };
 
@@ -66,6 +64,11 @@ interface LocationMapProps {
     lng: number;
     confidence: number;
   }>;
+  selectedLocation?: {
+    name: string;
+    lat: number;
+    lng: number;
+  } | null;
   onLocationSelect?: (location: { name: string; lat: number; lng: number }) => void;
 }
 
@@ -73,12 +76,20 @@ const LocationMap: React.FC<LocationMapProps> = ({
   latitude,
   longitude,
   locations = [],
+  selectedLocation,
   onLocationSelect
 }) => {
   // Default center (Rome, Italy) if no coordinates provided
   const defaultCenter: [number, number] = [41.9028, 12.4964];
-  const center: [number, number] = latitude && longitude ? [latitude, longitude] : defaultCenter;
-  const zoom = latitude && longitude ? 14 : 6;
+  
+  // Use selected location coordinates if available, otherwise use provided coordinates, otherwise default
+  const center: [number, number] = selectedLocation 
+    ? [selectedLocation.lat, selectedLocation.lng]
+    : latitude && longitude 
+    ? [latitude, longitude] 
+    : defaultCenter;
+    
+  const zoom = selectedLocation || (latitude && longitude) ? 14 : 6;
 
   const handleLocationClick = (location: { name: string; lat: number; lng: number }) => {
     onLocationSelect?.(location);
@@ -102,39 +113,34 @@ const LocationMap: React.FC<LocationMapProps> = ({
           
           <MapViewController center={center} zoom={zoom} />
 
-          {/* Exact location marker */}
-          {latitude && longitude && (
-            <Marker position={[latitude, longitude]} icon={exactLocationIcon}>
-              <Popup>
-                <div className="text-sm">
-                  <strong>Posizione esatta</strong><br />
-                  {latitude.toFixed(6)}, {longitude.toFixed(6)}
-                </div>
-              </Popup>
-            </Marker>
-          )}
-
           {/* Probable locations markers */}
-          {locations.map((location, index) => (
-            <Marker
-              key={`${location.name}-${index}`}
-              position={[location.lat, location.lng]}
-              icon={createNumberedIcon(index + 1)}
-              eventHandlers={{
-                click: () => handleLocationClick(location),
-              }}
-            >
-              <Popup>
-                <div className="text-sm p-2">
-                  <strong>{location.name}</strong><br />
-                  <span className="text-green-600">Confidenza: {location.confidence}%</span><br />
-                  <small className="text-gray-500">
-                    {location.lat.toFixed(4)}, {location.lng.toFixed(4)}
-                  </small>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
+          {locations.map((location, index) => {
+            const isSelected = selectedLocation && 
+              selectedLocation.lat === location.lat && 
+              selectedLocation.lng === location.lng &&
+              selectedLocation.name === location.name;
+              
+            return (
+              <Marker
+                key={`${location.name}-${index}`}
+                position={[location.lat, location.lng]}
+                icon={createNumberedIcon(index + 1, isSelected)}
+                eventHandlers={{
+                  click: () => handleLocationClick(location),
+                }}
+              >
+                <Popup>
+                  <div className="text-sm p-2">
+                    <strong>{location.name}</strong><br />
+                    <span className="text-green-600">Confidenza: {location.confidence}%</span><br />
+                    <small className="text-gray-500">
+                      {location.lat.toFixed(4)}, {location.lng.toFixed(4)}
+                    </small>
+                  </div>
+                </Popup>
+              </Marker>
+            );
+          })}
         </MapContainer>
       </div>
     </Card>
