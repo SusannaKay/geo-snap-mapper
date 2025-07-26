@@ -1,61 +1,16 @@
-import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import { Card } from '@/components/ui/card';
+import React from 'react';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { Card } from '@/components/ui/card';
 
-// Fix for default markers in Leaflet with React
-delete (L.Icon.Default.prototype as any)._getIconUrl;
+// Fix for default markers in Leaflet
+delete (L.Icon.Default.prototype as { _getIconUrl?: () => string })._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
-
-// Custom icons for different marker types
-const exactLocationIcon = new L.Icon({
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-  className: 'exact-location-marker'
-});
-
-const createNumberedIcon = (number: number) => {
-  return L.divIcon({
-    html: `<div style="
-      width: 30px;
-      height: 30px;
-      border-radius: 50%;
-      background: hsl(217 91% 60%);
-      border: 3px solid white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-weight: bold;
-      font-size: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-    ">${number}</div>`,
-    className: 'numbered-marker',
-    iconSize: [30, 30],
-    iconAnchor: [15, 15],
-  });
-};
-
-// Component to handle map view updates
-const MapViewController: React.FC<{ center: [number, number]; zoom: number }> = ({ center, zoom }) => {
-  const map = useMap();
-  
-  useEffect(() => {
-    map.setView(center, zoom);
-  }, [map, center, zoom]);
-  
-  return null;
-};
 
 interface LocationMapProps {
   latitude?: number;
@@ -69,42 +24,77 @@ interface LocationMapProps {
   onLocationSelect?: (location: { name: string; lat: number; lng: number }) => void;
 }
 
+// Create custom icons for different marker types
+const createExactLocationIcon = () => {
+  return L.divIcon({
+    className: 'exact-location-marker',
+    html: `<div style="
+      width: 25px;
+      height: 25px;
+      border-radius: 50%;
+      background: #3b82f6;
+      border: 3px solid white;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    "></div>`,
+    iconSize: [25, 25],
+    iconAnchor: [12, 12],
+  });
+};
+
+const createProbableLocationIcon = (index: number) => {
+  return L.divIcon({
+    className: 'location-marker',
+    html: `<div style="
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: hsl(217 91% 60%);
+      border: 3px solid white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    ">${index + 1}</div>`,
+    iconSize: [30, 30],
+    iconAnchor: [15, 15],
+  });
+};
+
 const LocationMap: React.FC<LocationMapProps> = ({
   latitude,
   longitude,
   locations = [],
   onLocationSelect
 }) => {
-  // Default center (Rome, Italy) if no coordinates provided
-  const defaultCenter: [number, number] = [41.9028, 12.4964];
-  const center: [number, number] = latitude && longitude ? [latitude, longitude] : defaultCenter;
-  const zoom = latitude && longitude ? 14 : 6;
-
-  const handleLocationClick = (location: { name: string; lat: number; lng: number }) => {
-    onLocationSelect?.(location);
-  };
+  // Determine map center and zoom
+  const center: [number, number] = [latitude || 41.9028, longitude || 12.4964]; // Default to Rome
+  const zoom = latitude && longitude ? 14 : 2;
 
   return (
     <Card className="overflow-hidden bg-gradient-card border-border/50 shadow-design-md">
-      <div className="w-full h-96" style={{ minHeight: '400px' }}>
+      <div className="w-full h-96 rounded-lg" style={{ minHeight: '400px' }}>
         <MapContainer
           center={center}
           zoom={zoom}
           scrollWheelZoom={true}
-          style={{ height: '100%', width: '100%' }}
-          className="rounded-lg"
+          className="w-full h-full rounded-lg"
+          attributionControl={true}
         >
-          {/* OpenStreetMap tiles */}
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
           
-          <MapViewController center={center} zoom={zoom} />
-
           {/* Exact location marker */}
           {latitude && longitude && (
-            <Marker position={[latitude, longitude]} icon={exactLocationIcon}>
+            <Marker
+              position={[latitude, longitude]}
+              icon={createExactLocationIcon()}
+            >
               <Popup>
                 <div className="text-sm">
                   <strong>Posizione esatta</strong><br />
@@ -114,14 +104,16 @@ const LocationMap: React.FC<LocationMapProps> = ({
             </Marker>
           )}
 
-          {/* Probable locations markers */}
+          {/* Probable location markers */}
           {locations.map((location, index) => (
             <Marker
-              key={`${location.name}-${index}`}
+              key={`${location.lat}-${location.lng}-${index}`}
               position={[location.lat, location.lng]}
-              icon={createNumberedIcon(index + 1)}
+              icon={createProbableLocationIcon(index)}
               eventHandlers={{
-                click: () => handleLocationClick(location),
+                click: () => {
+                  onLocationSelect?.(location);
+                },
               }}
             >
               <Popup>
