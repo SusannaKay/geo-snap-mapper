@@ -9,9 +9,10 @@ interface ImageUploadProps {
   onImageUpload: (file: File) => void;
   onImageRemove?: () => void;
   isLoading: boolean;
+  originalFile?: File | null;
 }
 
-const ImageUpload: React.FC<ImageUploadProps> = ({ onImageUpload, onImageRemove, isLoading }) => {
+const ImageUpload: React.FC<ImageUploadProps> = ({ onImageUpload, onImageRemove, isLoading, originalFile }) => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
 

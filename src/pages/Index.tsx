@@ -3,6 +3,7 @@ import ImageUpload from '@/components/ImageUpload';
 import LocationMap from '@/components/LocationMap';
 import ExifInfo from '@/components/ExifInfo';
 import LocationOptions from '@/components/LocationOptions';
+import ImageProcessor from '@/components/ImageProcessor';
 import { Card } from '@/components/ui/card';
 import { AlertCircle, CheckCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
@@ -39,8 +40,11 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<ProcessingResult | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<any>(null);
+  const [originalFile, setOriginalFile] = useState<File | null>(null);
+  const [isProcessingImage, setIsProcessingImage] = useState(false);
 
   const handleImageUpload = async (file: File) => {
+    setOriginalFile(file);
     setIsLoading(true);
     setResult(null);
     setSelectedLocation(null);
@@ -131,10 +135,16 @@ const Index = () => {
   const handleImageRemove = () => {
     setResult(null);
     setSelectedLocation(null);
+    setOriginalFile(null);
   };
 
   const handleLocationSelect = (location: any) => {
     setSelectedLocation(location);
+  };
+
+  const handleImageUpdated = (updatedFile: File) => {
+    // Aggiorna il file originale con quello modificato
+    setOriginalFile(updatedFile);
   };
 
   return (
@@ -156,7 +166,8 @@ const Index = () => {
           <ImageUpload 
             onImageUpload={handleImageUpload} 
             onImageRemove={handleImageRemove}
-            isLoading={isLoading} 
+            isLoading={isLoading}
+            originalFile={originalFile}
           />
         </div>
 
@@ -191,6 +202,16 @@ const Index = () => {
                     locations={result.probableLocations}
                     onLocationSelect={handleLocationSelect}
                     selectedLocation={selectedLocation}
+                  />
+                )}
+
+                {/* Image Processor */}
+                {selectedLocation && originalFile && (
+                  <ImageProcessor
+                    originalFile={originalFile}
+                    selectedLocation={selectedLocation}
+                    onImageUpdated={handleImageUpdated}
+                    isProcessing={isProcessingImage}
                   />
                 )}
               </div>
