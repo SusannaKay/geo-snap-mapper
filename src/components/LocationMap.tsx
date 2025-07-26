@@ -1,14 +1,16 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import mapboxgl from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
+import React from 'react';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { MapPin, Settings } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
 
-// Placeholder token - users need to replace with their own
-const MAPBOX_TOKEN = 'pk.your_mapbox_token_here';
+// Fix for default markers in Leaflet
+delete (L.Icon.Default.prototype as { _getIconUrl?: () => string })._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
 
 interface LocationMapProps {
   latitude?: number;
@@ -22,181 +24,111 @@ interface LocationMapProps {
   onLocationSelect?: (location: { name: string; lat: number; lng: number }) => void;
 }
 
+// Create custom icons for different marker types
+const createExactLocationIcon = () => {
+  return L.divIcon({
+    className: 'exact-location-marker',
+    html: `<div style="
+      width: 25px;
+      height: 25px;
+      border-radius: 50%;
+      background: #3b82f6;
+      border: 3px solid white;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    "></div>`,
+    iconSize: [25, 25],
+    iconAnchor: [12, 12],
+  });
+};
+
+const createProbableLocationIcon = (index: number) => {
+  return L.divIcon({
+    className: 'location-marker',
+    html: `<div style="
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: hsl(217 91% 60%);
+      border: 3px solid white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    ">${index + 1}</div>`,
+    iconSize: [30, 30],
+    iconAnchor: [15, 15],
+  });
+};
+
 const LocationMap: React.FC<LocationMapProps> = ({
   latitude,
   longitude,
   locations = [],
   onLocationSelect
 }) => {
-  const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
-  const [userToken, setUserToken] = useState('');
-  const [showTokenInput, setShowTokenInput] = useState(true);
-  const [mapInitialized, setMapInitialized] = useState(false);
-
-  const initializeMap = useCallback((token: string) => {
-    if (!mapContainer.current || map.current) return;
-
-    try {
-      mapboxgl.accessToken = token;
-      
-      const mapInstance = new mapboxgl.Map({
-        container: mapContainer.current,
-        style: 'mapbox://styles/mapbox/streets-v12',
-        center: [longitude || 0, latitude || 0],
-        zoom: latitude && longitude ? 14 : 2,
-      });
-
-      // Add navigation controls
-      mapInstance.addControl(new mapboxgl.NavigationControl(), 'top-right');
-
-      // Add marker for exact coordinates if available
-      if (latitude && longitude) {
-        new mapboxgl.Marker({ color: '#3b82f6' })
-          .setLngLat([longitude, latitude])
-          .setPopup(new mapboxgl.Popup().setHTML(`
-            <div class="text-sm">
-              <strong>Posizione esatta</strong><br>
-              ${latitude.toFixed(6)}, ${longitude.toFixed(6)}
-            </div>
-          `))
-          .addTo(mapInstance);
-      }
-
-      // Add markers for probable locations
-      locations.forEach((location, index) => {
-        const el = document.createElement('div');
-        el.className = 'location-marker';
-        el.style.cssText = `
-          width: 30px;
-          height: 30px;
-          border-radius: 50%;
-          background: hsl(217 91% 60%);
-          border: 3px solid white;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-          font-weight: bold;
-          font-size: 12px;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-        `;
-        el.textContent = (index + 1).toString();
-
-        el.addEventListener('click', () => {
-          onLocationSelect?.(location);
-          mapInstance.flyTo({
-            center: [location.lng, location.lat],
-            zoom: 14,
-            duration: 1000
-          });
-        });
-
-        new mapboxgl.Marker(el)
-          .setLngLat([location.lng, location.lat])
-          .setPopup(new mapboxgl.Popup().setHTML(`
-            <div class="text-sm p-2">
-              <strong>${location.name}</strong><br>
-              <span class="text-green-600">Confidenza: ${location.confidence}%</span><br>
-              <small class="text-gray-500">${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}</small>
-            </div>
-          `))
-          .addTo(mapInstance);
-      });
-
-      map.current = mapInstance;
-      setMapInitialized(true);
-      setShowTokenInput(false);
-      
-    } catch (error) {
-      toast({
-        title: "Errore inizializzazione mappa",
-        description: "Verifica che il token Mapbox sia valido",
-        variant: "destructive",
-      });
-    }
-  }, [latitude, longitude, locations, onLocationSelect]);
-
-  const handleTokenSubmit = () => {
-    if (!userToken.trim()) {
-      toast({
-        title: "Token richiesto",
-        description: "Inserisci il tuo token Mapbox per visualizzare la mappa",
-        variant: "destructive",
-      });
-      return;
-    }
-    initializeMap(userToken);
-  };
-
-  useEffect(() => {
-    return () => {
-      map.current?.remove();
-    };
-  }, []);
-
-  if (showTokenInput) {
-    return (
-      <Card className="p-6 bg-gradient-card border-border/50 shadow-design-md">
-        <div className="text-center space-y-4">
-          <div className="w-12 h-12 bg-accent/20 rounded-full flex items-center justify-center mx-auto">
-            <Settings className="w-6 h-6 text-accent" />
-          </div>
-          
-          <div>
-            <h3 className="text-lg font-semibold mb-2">Configura Mapbox</h3>
-            <p className="text-muted-foreground text-sm mb-4">
-              Per visualizzare la mappa interattiva, inserisci il tuo token Mapbox pubblico.
-              <br />
-              <a 
-                href="https://mapbox.com/" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-accent hover:underline"
-              >
-                Ottieni il token su mapbox.com
-              </a>
-            </p>
-          </div>
-
-          <div className="space-y-3 max-w-md mx-auto">
-            <Input
-              type="text"
-              placeholder="pk.eyJ1IjoieW91cnVzZXJuYW1lIiwicmVmcmVzaCImIjoiMzAiLCJuZXciOiJmYWxzZSI..."
-              value={userToken}
-              onChange={(e) => setUserToken(e.target.value)}
-              className="text-sm"
-            />
-            <Button 
-              onClick={handleTokenSubmit}
-              className="w-full"
-              disabled={!userToken.trim()}
-            >
-              <MapPin className="w-4 h-4 mr-2" />
-              Inizializza Mappa
-            </Button>
-          </div>
-        </div>
-      </Card>
-    );
-  }
+  // Determine map center and zoom
+  const center: [number, number] = [latitude || 41.9028, longitude || 12.4964]; // Default to Rome
+  const zoom = latitude && longitude ? 14 : 2;
 
   return (
     <Card className="overflow-hidden bg-gradient-card border-border/50 shadow-design-md">
-      <div 
-        ref={mapContainer} 
-        className="w-full h-96 rounded-lg"
-        style={{ minHeight: '400px' }}
-      />
-      {!mapInitialized && (
-        <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
-          <div className="text-center">
-            <div className="w-8 h-8 border-3 border-accent border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-            <p className="text-sm text-muted-foreground">Caricamento mappa...</p>
-          </div>
-        </div>
-      )}
+      <div className="w-full h-96 rounded-lg" style={{ minHeight: '400px' }}>
+        <MapContainer
+          center={center}
+          zoom={zoom}
+          scrollWheelZoom={true}
+          className="w-full h-full rounded-lg"
+          attributionControl={true}
+        >
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+          
+          {/* Exact location marker */}
+          {latitude && longitude && (
+            <Marker
+              position={[latitude, longitude]}
+              icon={createExactLocationIcon()}
+            >
+              <Popup>
+                <div className="text-sm">
+                  <strong>Posizione esatta</strong><br />
+                  {latitude.toFixed(6)}, {longitude.toFixed(6)}
+                </div>
+              </Popup>
+            </Marker>
+          )}
+
+          {/* Probable location markers */}
+          {locations.map((location, index) => (
+            <Marker
+              key={`${location.lat}-${location.lng}-${index}`}
+              position={[location.lat, location.lng]}
+              icon={createProbableLocationIcon(index)}
+              eventHandlers={{
+                click: () => {
+                  onLocationSelect?.(location);
+                },
+              }}
+            >
+              <Popup>
+                <div className="text-sm p-2">
+                  <strong>{location.name}</strong><br />
+                  <span className="text-green-600">Confidenza: {location.confidence}%</span><br />
+                  <small className="text-gray-500">
+                    {location.lat.toFixed(4)}, {location.lng.toFixed(4)}
+                  </small>
+                </div>
+              </Popup>
+            </Marker>
+          ))}
+        </MapContainer>
+      </div>
     </Card>
   );
 };
